@@ -86,23 +86,30 @@ public class NeovimIntellijComplete extends AnAction {
 
     @Override
     public void actionPerformed(AnActionEvent e) {
-        MessagePackRPC.Connection conn;
-        HostAndPort hp = HostAndPort.fromParts("127.0.0.1", 7650);
-        try {
-            conn = new SocketNeovim(hp);
-        } catch (IOException ex) {
-            LOG.error("Failed to connect to neovim", ex);
-            return;
 
+        NeovimDialog dialog = new NeovimDialog(true);
+        dialog.show();
+
+        if (dialog.isOK()) {
+            LOG.warn(dialog.getAddr());
+
+            MessagePackRPC.Connection conn;
+            //HostAndPort hp = HostAndPort.fromParts("127.0.0.1", 7650);
+            try {
+                conn = new SocketNeovim(dialog.getAddr());
+            } catch (IOException ex) {
+                LOG.error("Failed to connect to neovim", ex);
+                return;
+            }
+            mNeovim = Neovim.connectTo(conn);
+            LOG.info("Connected to neovim");
+
+            long cid = mNeovim.getChannelId().join();
+            mNeovim.commandOutput("let g:intellijID=" + cid);
+            mNeovim.register(new Updater(mNeovim));
+
+            mNeovim.sendVimCommand("echo 'Intellij connected.'");
         }
-        mNeovim = Neovim.connectTo(conn);
-        LOG.info("Connected to neovim");
 
-        long cid = mNeovim.getChannelId().join();
-        mNeovim.commandOutput("let g:intellijID=" + cid);
-        mNeovim.register(new Updater(mNeovim));
-
-        mNeovim.sendVimCommand("echo 'Intellij connected.'");
     }
-
 }
