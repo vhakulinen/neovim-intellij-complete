@@ -30,7 +30,10 @@
 
   <actions>
     <!-- Add your actions here -->
-    <action id="NeovimIntellijComplete" class="NeovimIntellijComplete" text="NeovimIntellijComplete" description="NeovimIntellijComplete"/>
+    <group id="NeovimINtellijComplete.SampleMenu" text="_Neovim" description="Neovim">
+      <add-to-group group-id="MainMenu" anchor="last"  />
+      <action id="NeovimIntellijComplete" class="NeovimIntellijComplete" text="Connect" description="Connect to neovim"/>
+    </group>
   </actions>
 
 </idea-plugin>
