@@ -1,3 +1,5 @@
+package complete;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class DeopleteItem {

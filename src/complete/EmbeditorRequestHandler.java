@@ -1,21 +1,15 @@
+package complete;
 
 import com.intellij.codeInsight.completion.CompletionParameters;
 import com.intellij.codeInsight.completion.CompletionProgressIndicator;
-import com.intellij.codeInsight.completion.PrioritizedLookupElement;
-import com.intellij.codeInsight.completion.SmartCompletionDecorator;
-import com.intellij.codeInsight.lookup.Lookup;
 import com.intellij.codeInsight.lookup.LookupElement;
-import com.intellij.codeInsight.lookup.LookupElementPresentation;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.util.Ref;
-import com.intellij.openapi.util.UserDataHolderBase;
 import com.intellij.psi.PsiFile;
 import com.intellij.util.containers.ContainerUtil;
-import com.intellij.util.keyFMap.KeyFMap;
 import com.intellij.util.ui.UIUtil;
 import org.jetbrains.annotations.NotNull;
-import com.intellij.openapi.util.Key;
 
 import java.util.Collection;
 import java.util.Hashtable;

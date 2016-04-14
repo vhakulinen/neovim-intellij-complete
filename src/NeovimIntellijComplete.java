@@ -9,6 +9,9 @@ import com.intellij.psi.impl.file.PsiPackageImpl;
 import com.intellij.util.ui.UIUtil;
 import com.neovim.*;
 import com.neovim.msgpack.MessagePackRPC;
+import complete.DeopleteHelper;
+import complete.DeopleteItem;
+import complete.EmbeditorRequestHandler;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,7 +41,7 @@ public class NeovimIntellijComplete extends AnAction {
 
         @NeovimHandler("IntellijComplete")
         public DeopleteItem[] intellijComplete(final String path, final String bufferContents,
-                                         final int row, final int col) {
+                                               final int row, final int col) {
 
             LookupElement[] c = mEmbeditorRequestHandler.getCompletionVariants(path, bufferContents, row, col);
             if (c.length < 0) return null;

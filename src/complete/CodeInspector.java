@@ -1,3 +1,4 @@
+package complete;
 
 import com.intellij.analysis.AnalysisScope;
 import com.intellij.codeInsight.daemon.impl.DefaultHighlightInfoProcessor;
