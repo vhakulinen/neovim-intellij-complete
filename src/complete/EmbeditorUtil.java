@@ -117,8 +117,8 @@ public final class EmbeditorUtil {
             if (originalDocument != null) {
 
                 PsiFile fileCopy = fileContent != null
-                        ? createDummyFile(project, fileContent, targetPsiFile)
-                        : createDummyFile(project, targetPsiFile.getText(), targetPsiFile);
+                        ? createDummyPsiFile(project, fileContent, targetPsiFile)
+                        : createDummyPsiFile(project, targetPsiFile.getText(), targetPsiFile);
                 final Document document = fileCopy.getViewProvider().getDocument();
                 if (document != null) {
                     int offset = lineAndColumnToOffset(document, line, column);
@@ -157,8 +157,8 @@ public final class EmbeditorUtil {
                     if (originalDocument != null) {
 
                         PsiFile fileCopy = fileContent != null
-                                ? createDummyFile(project, fileContent, targetPsiFile)
-                                : createDummyFile(project, targetPsiFile.getText(), targetPsiFile);
+                                ? createDummyPsiFile(project, fileContent, targetPsiFile)
+                                : createDummyPsiFile(project, targetPsiFile.getText(), targetPsiFile);
                         final Document document = fileCopy.getViewProvider().getDocument();
                         if (document != null) {
                             final Editor editor = editorFactory.createEditor(document, project, targetVirtualFile, false);
@@ -187,9 +187,13 @@ public final class EmbeditorUtil {
         });
     }
 
-    public static PsiFile createDummyFile(Project project, String contents, PsiFile original) {
+    public static LightVirtualFile createDummyVirtualFile(Project project, String contents, PsiFile original) {
+        return new LightVirtualFile(original.getName(), original.getFileType(), contents);
+    }
+
+    public static PsiFile createDummyPsiFile(Project project, String contents, PsiFile original) {
         final PsiFileFactory factory = PsiFileFactory.getInstance(project);
-        final LightVirtualFile virtualFile = new LightVirtualFile(original.getName(), original.getFileType(), contents);
+        final LightVirtualFile virtualFile = createDummyVirtualFile(project, contents, original);
 
         final PsiFile psiFile = ((PsiFileFactoryImpl)factory).trySetupPsiForFile(virtualFile, original.getLanguage(), false, true);
         assert psiFile != null;

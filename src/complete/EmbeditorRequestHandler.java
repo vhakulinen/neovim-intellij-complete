@@ -1,16 +1,22 @@
 package complete;
 
+import com.intellij.codeInsight.CodeSmellInfo;
 import com.intellij.codeInsight.completion.CompletionParameters;
 import com.intellij.codeInsight.completion.CompletionProgressIndicator;
 import com.intellij.codeInsight.lookup.LookupElement;
+import com.intellij.codeInspection.LocalInspectionTool;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Document;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Ref;
+import com.intellij.openapi.vcs.CodeSmellDetector;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 import com.intellij.util.containers.ContainerUtil;
 import com.intellij.util.ui.UIUtil;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Hashtable;
 import java.util.List;
@@ -66,24 +72,18 @@ public class EmbeditorRequestHandler {
         return completionVariants.toArray(new LookupElement[completionVariants.size()]);
     }
 
-    public Hashtable[] inspectCode(final String path, String fileContent) {
-        final Hashtable[][] resultsWrapper = new Hashtable[1][];
+    public CodeSmellInfo[] inspectCode(final String path, String fileContent) {
+        final CodeSmellInfo[][] resultsWrapper = new CodeSmellInfo[1][];
         UIUtil.invokeAndWaitIfNeeded(new Runnable() {
             @Override
             public void run() {
-                PsiFile file = EmbeditorUtil.findTargetFile(path);
-                if (file != null) {
-                    List<Problem> problems = CodeInspector.inspect(file);
-                    Hashtable[] results = new Hashtable[problems.size()];
-                    for (int i = 0; i < problems.size(); i++) {
-                        Problem problem = problems.get(i);
-                        Hashtable<String, Object> result = new Hashtable<String, Object>();
-                        result.put("line", problem.getLine());
-                        result.put("column", problem.getColumn());
-                        result.put("text", problem.getText());
-                        results[i] = result;
-                    }
-                    resultsWrapper[0] = results;
+                final PsiFile targetPsiFile = EmbeditorUtil.findTargetFile(path);
+                Project project = targetPsiFile.getProject();
+                if (targetPsiFile != null) {
+                    List<VirtualFile> virtualFiles = new ArrayList<VirtualFile>();
+                    virtualFiles.add(EmbeditorUtil.createDummyVirtualFile(project, fileContent, targetPsiFile));
+                    List<CodeSmellInfo> problems = CodeSmellDetector.getInstance(project).findCodeSmells(virtualFiles);
+                    resultsWrapper[0] = problems.toArray(new CodeSmellInfo[problems.size()]);
                 }
             }
         });

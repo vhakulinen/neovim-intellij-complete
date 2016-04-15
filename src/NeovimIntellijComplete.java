@@ -1,9 +1,18 @@
 import com.google.common.net.HostAndPort;
+import com.intellij.codeInsight.CodeSmellInfo;
 import com.intellij.codeInsight.lookup.LookupElement;
 import com.intellij.codeInsight.lookup.LookupElementBuilder;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.DataContext;
+import com.intellij.openapi.actionSystem.DataKeys;
+import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.editor.Document;
+import com.intellij.openapi.editor.EditorFactory;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vcs.CodeSmellDetector;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.*;
 import com.intellij.psi.impl.file.PsiPackageImpl;
 import com.intellij.util.ui.UIUtil;
@@ -12,9 +21,11 @@ import com.neovim.msgpack.MessagePackRPC;
 import complete.DeopleteHelper;
 import complete.DeopleteItem;
 import complete.EmbeditorRequestHandler;
+import complete.Problem;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class NeovimIntellijComplete extends AnAction {
@@ -37,6 +48,17 @@ public class NeovimIntellijComplete extends AnAction {
         @NeovimHandler("TextChanged")
         public void changed(String args) {
             LOG.info("Text changed");
+        }
+
+        @NeovimHandler("IntellijCodeSmell")
+        public Problem[] intellijCodeSmell(final String path, final List<String> lines) {
+            final String fileContent = String.join("\n", lines);
+            List<Problem> retval = new ArrayList<Problem>();
+            CodeSmellInfo[] smells = mEmbeditorRequestHandler.inspectCode(path, fileContent);
+            for (CodeSmellInfo smell : smells) {
+                retval.add(new Problem(smell.getStartLine(), smell.getStartColumn(), smell.getDescription()));
+            }
+            return retval.toArray(new Problem[]{});
         }
 
         @NeovimHandler("IntellijComplete")

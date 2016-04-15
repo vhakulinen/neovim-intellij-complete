@@ -1,8 +1,13 @@
 package complete;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Problem {
+    @JsonProperty
     private int line;
+    @JsonProperty
     private int column;
+    @JsonProperty
     private String text;
 
     public Problem(int line, int column, String text) {
