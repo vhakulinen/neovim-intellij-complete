@@ -1,31 +1,27 @@
-import com.google.common.net.HostAndPort;
+import codeinspect.Inspect;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.intellij.codeInsight.CodeSmellInfo;
+import com.intellij.codeInsight.daemon.impl.HighlightInfo;
 import com.intellij.codeInsight.lookup.LookupElement;
 import com.intellij.codeInsight.lookup.LookupElementBuilder;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.actionSystem.DataContext;
-import com.intellij.openapi.actionSystem.DataKeys;
-import com.intellij.openapi.components.ServiceManager;
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.openapi.editor.Document;
-import com.intellij.openapi.editor.EditorFactory;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.vcs.CodeSmellDetector;
+import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.*;
 import com.intellij.psi.impl.file.PsiPackageImpl;
 import com.intellij.util.ui.UIUtil;
-import com.neovim.*;
+import com.neovim.Neovim;
+import com.neovim.NeovimHandler;
+import com.neovim.SocketNeovim;
 import com.neovim.msgpack.MessagePackRPC;
-import complete.DeopleteHelper;
-import complete.DeopleteItem;
-import complete.EmbeditorRequestHandler;
-import complete.Problem;
+import complete.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class NeovimIntellijComplete extends AnAction {
@@ -39,15 +35,51 @@ public class NeovimIntellijComplete extends AnAction {
 
         private Neovim mNeovim;
         private EmbeditorRequestHandler mEmbeditorRequestHandler;
+        private List<HighlightInfo.IntentionActionDescriptor> mCachedFixes;
 
         public Updater(Neovim nvim){
             mNeovim = nvim;
             mEmbeditorRequestHandler = new EmbeditorRequestHandler();
         }
 
+        /**
+         * Hack to have up to date files when doing quickfix stuff...
+         * @param path
+         */
+        @NeovimHandler("IntellijOnWrite")
+        public void intellijOnWrite(String path) {
+            ApplicationManager.getApplication().invokeAndWait(() -> {
+                PsiFile f = EmbeditorUtil.findTargetFile(path);
+                if (f != null) {
+                    VirtualFile vf = f.getVirtualFile();
+                    if (vf != null)
+                        vf.refresh(false, true);
+                }
+            }, ModalityState.any());
+        }
+
         @NeovimHandler("TextChanged")
         public void changed(String args) {
             LOG.info("Text changed");
+        }
+
+        @NeovimHandler("IntellijFixProblem")
+        public void intellijFixProblem(String path, List<String> lines, int fixId) {
+            final String fileContent = String.join("\n", lines) ;
+            Inspect.doFix(path, fileContent, mCachedFixes.get(fixId));
+
+        }
+
+        @NeovimHandler("IntellijProblems")
+        public Fix[] intellijProblems(String path, List<String> lines, final int row, final int col) {
+            final String fileContent = String.join("\n", lines) ;
+            mCachedFixes = Inspect.getFixes(path, fileContent, row, col);
+            Fix[] retval = new Fix[mCachedFixes.size()];
+            for (int i = 0; i < mCachedFixes.size(); i++) {
+                HighlightInfo.IntentionActionDescriptor d = mCachedFixes.get(i);
+                retval[i] = new Fix(d.getAction().getText(), i);
+            }
+            return retval;
         }
 
         @NeovimHandler("IntellijCodeSmell")
@@ -101,6 +133,27 @@ public class NeovimIntellijComplete extends AnAction {
                 });
             return dh.getItems();
         }
+
+        private class Fix {
+            @JsonProperty
+            private String description;
+            @JsonProperty
+            private int fixId;
+
+
+            public Fix(String description, int fixId) {
+                this.description = description;
+                this.fixId = fixId;
+            }
+
+            public String getDescription() {
+                return description;
+            }
+
+            public int getFixId() {
+                return fixId;
+            }
+        }
     }
 
     public NeovimIntellijComplete() {
@@ -128,6 +181,8 @@ public class NeovimIntellijComplete extends AnAction {
 
             long cid = mNeovim.getChannelId().join();
             mNeovim.commandOutput("let g:intellijID=" + cid);
+            // Refresh file on intellij on write so we can have uptodate stuff when doing codeanalyzis
+            mNeovim.commandOutput("au BufWritePost * call rpcnotify(g:intellijID, \"IntellijOnWrite\", expand(\"%:p\"))");
             mNeovim.register(new Updater(mNeovim));
 
             mNeovim.sendVimCommand("echo 'Intellij connected.'");
