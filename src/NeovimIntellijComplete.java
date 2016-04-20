@@ -1,7 +1,9 @@
 import codeinspect.Inspect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.intellij.codeInsight.CodeSmellInfo;
 import com.intellij.codeInsight.daemon.impl.HighlightInfo;
+import com.intellij.codeInsight.intention.IntentionAction;
 import com.intellij.codeInsight.lookup.LookupElement;
 import com.intellij.codeInsight.lookup.LookupElementBuilder;
 import com.intellij.openapi.actionSystem.AnAction;
@@ -35,7 +37,7 @@ public class NeovimIntellijComplete extends AnAction {
 
         private Neovim mNeovim;
         private EmbeditorRequestHandler mEmbeditorRequestHandler;
-        private List<HighlightInfo.IntentionActionDescriptor> mCachedFixes;
+        private Fix[] mCachedFixes = new Fix[0];
 
         public Updater(Neovim nvim){
             mNeovim = nvim;
@@ -66,20 +68,27 @@ public class NeovimIntellijComplete extends AnAction {
         @NeovimHandler("IntellijFixProblem")
         public void intellijFixProblem(String path, List<String> lines, int fixId) {
             final String fileContent = String.join("\n", lines) ;
-            Inspect.doFix(path, fileContent, mCachedFixes.get(fixId));
+            for (Fix f : mCachedFixes) {
+                if (f.getFixId() == fixId) {
+                    Inspect.doFix(path, fileContent, f.getAction());
+                    break;
+                }
+            }
 
         }
 
         @NeovimHandler("IntellijProblems")
         public Fix[] intellijProblems(String path, List<String> lines, final int row, final int col) {
             final String fileContent = String.join("\n", lines) ;
-            mCachedFixes = Inspect.getFixes(path, fileContent, row, col);
-            Fix[] retval = new Fix[mCachedFixes.size()];
-            for (int i = 0; i < mCachedFixes.size(); i++) {
-                HighlightInfo.IntentionActionDescriptor d = mCachedFixes.get(i);
-                retval[i] = new Fix(d.getAction().getText(), i);
+            List<HighlightInfo.IntentionActionDescriptor> allFixes = Inspect.getFixes(path, fileContent, row, col);
+            List<Fix> fixes = new ArrayList<>();
+            for (int i = 0; i < allFixes.size(); i++) {
+                HighlightInfo.IntentionActionDescriptor d = allFixes.get(i);
+                if (d.getAction().getText().length() == 0) continue;
+                fixes.add(new Fix(d.getAction().getText(), i, d));
             }
-            return retval;
+            mCachedFixes = fixes.toArray(new Fix[fixes.size()]);
+            return mCachedFixes;
         }
 
         @NeovimHandler("IntellijCodeSmell")
@@ -140,10 +149,13 @@ public class NeovimIntellijComplete extends AnAction {
             @JsonProperty
             private int fixId;
 
+            @JsonIgnore
+            private HighlightInfo.IntentionActionDescriptor action;
 
-            public Fix(String description, int fixId) {
+            public Fix(String description, int fixId, HighlightInfo.IntentionActionDescriptor action) {
                 this.description = description;
                 this.fixId = fixId;
+                this.action = action;
             }
 
             public String getDescription() {
@@ -152,6 +164,10 @@ public class NeovimIntellijComplete extends AnAction {
 
             public int getFixId() {
                 return fixId;
+            }
+
+            public HighlightInfo.IntentionActionDescriptor getAction() {
+                return action;
             }
         }
     }
