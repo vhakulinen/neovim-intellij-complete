@@ -200,7 +200,7 @@ public final class EmbeditorUtil {
         return psiFile;
     }
 
-    private static int lineAndColumnToOffset(Document document, int line, int column) {
+    public static int lineAndColumnToOffset(Document document, int line, int column) {
         return document.getLineStartOffset(line) + column;
     }
 
