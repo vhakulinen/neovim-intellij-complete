@@ -7,7 +7,7 @@ Download the zip file from [releases page](https://github.com/vhakulinen/neovim-
 This is the IntelliJ plugin which provides functionality for Neovim which you can
 use with deoplete and [neovim-intellij-complete-deoplete](https://github.com/vhakulinen/neovim-intellij-complete-deoplete).
 
-Install the neovim-intellij-complete plugin for IDEA, Andriod Studio, or 
+Install the neovim-intellij-complete plugin for IDEA, Android Studio, or 
 other Jetbrains IDE and deoplete + neovim-intellij-complete-deoplete for Neovim.
 
 # Use It
