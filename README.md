@@ -8,7 +8,7 @@ This is the IntelliJ plugin which provides functionality for Neovim which you ca
 use with deoplete and [neovim-intellij-complete-deoplete](https://github.com/vhakulinen/neovim-intellij-complete-deoplete).
 
 Install the neovim-intellij-complete plugin for IDEA, Android Studio, or 
-other Jetbrains IDE and deoplete + neovim-intellij-complete-deoplete for Neovim.
+other Jetbrains IDE and deoplete + neovim-intellij-complete-deoplete for Neovim. In order to install this plugin from disk, follow the instructions here : [Plugin disk installation instructions](https://www.jetbrains.com/help/idea/installing-a-plugin-from-the-disk.html?search=plugin)
 
 # Use It
 * Run `NVIM_LISTEN_ADDRESS=127.0.0.1:7650 nvim` 
